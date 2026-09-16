@@ -1,5 +1,7 @@
 # cursor-agent-team
 
+Source: [github.com/Darth9292/CursorExpTools](https://github.com/Darth9292/CursorExpTools)
+
 A Cursor plugin for **multiple classic IDE windows** on the same project: you talk only to **Agent A (lead)**; extra windows run **workers** that execute A's orders. They share a git-visible `team/` board plus a localhost Streamable HTTP MCP bus.
 
 Cursor cannot inject a message into another chat. This plugin is the workaround: MCP tools plus a file watcher that wakes a worker **only when they get a new order** (not a 1-minute `/loop`).
