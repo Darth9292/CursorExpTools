@@ -1,0 +1,22 @@
+{
+  "name": "cursor-agent-team",
+  "version": "1.0.0",
+  "description": "Lead + worker agent team bus for multiple Cursor IDE windows on the same project",
+  "author": {
+    "name": "CursorExperimentalTools"
+  },
+  "keywords": [
+    "agents",
+    "team",
+    "mcp",
+    "multi-agent"
+  ],
+  "logo": "assets/logo.svg",
+  "license": "MIT",
+  "rules": "./rules/",
+  "agents": "./agents/",
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": "./mcp.json"
+}

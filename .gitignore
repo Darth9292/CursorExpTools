@@ -1,0 +1,20 @@
+node_modules/
+# dist/ is shipped in the npm tarball and must be committed for marketplace clones (hooks spawn dist/*.js).
+coverage/
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.env
+*.log
+team/.lock
+team/*.lock
+team/activity.jsonl
+# Live dogfood board in this plugin checkout — clones should not ship transcripts.
+# Keep team/config.json and team/README.md tracked.
+team/orders.json
+team/status.json
+team/harvest.json
+team/inbox.jsonl
+team/claims.json
+team/results/
+team/watchers/

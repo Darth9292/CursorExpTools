@@ -1,0 +1,26 @@
+{
+  "domain": "DayZ modding (Enfusion / server)",
+  "summary": "Gameplay scripts, PBO assets, and server configuration for a community DayZ mod. Workers split Enfusion logic, asset pipeline, and server tuning.",
+  "workers": {
+    "B": {
+      "title": "Enfusion gameplay",
+      "focus": "CF scripts, mission logic, player actions, and gameplay balance in Enfusion."
+    },
+    "C": {
+      "title": "Assets & PBO",
+      "focus": "Models, configs, packing PBOs, and validating asset paths for the mod."
+    },
+    "D": {
+      "title": "Server & config",
+      "focus": "serverDZ.cfg, economy tuning, spawn tables, and deployment notes."
+    }
+  },
+  "sources": [
+    "README.md",
+    "AGENTS.md",
+    ".cursor/rules/",
+    "mod.cpp / config.cpp"
+  ],
+  "adaptedAt": "2026-09-15T12:00:00.000Z",
+  "layeringNote": "Project rules (.cursor/rules), AGENTS.md, and the user's existing system prompts define domain expertise. Agent-team rules add multi-window coordination only — do not replace or contradict project instructions."
+}

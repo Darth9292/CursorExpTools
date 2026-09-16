@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "node ./hooks/session-start.mjs",
+        "timeout": 12
+      }
+    ]
+  }
+}

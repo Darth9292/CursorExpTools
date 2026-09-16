@@ -1,0 +1,26 @@
+{
+  "domain": "PlayStation 3 reverse engineering",
+  "summary": "Static analysis and tooling for PS3 binaries (MIPS, ELF). Workers split disassembly review, automation scripts, and documentation or test harnesses.",
+  "workers": {
+    "B": {
+      "title": "MIPS / static analysis",
+      "focus": "Disassembly, cross-refs, and calling conventions in PS3 ELFs; Ghidra/IDA workflows."
+    },
+    "C": {
+      "title": "Tooling & scripts",
+      "focus": "Python or Rust helpers, loaders, and batch analysis pipelines for firmware modules."
+    },
+    "D": {
+      "title": "Docs & harness",
+      "focus": "Findings in knowledge/, repro steps, and small test binaries or fixtures."
+    }
+  },
+  "sources": [
+    "README.md",
+    "AGENTS.md",
+    ".cursor/rules/",
+    "docs/reverse-engineering.md"
+  ],
+  "adaptedAt": "2026-09-15T12:00:00.000Z",
+  "layeringNote": "Project rules (.cursor/rules), AGENTS.md, and the user's existing system prompts define domain expertise. Agent-team rules add multi-window coordination only — do not replace or contradict project instructions."
+}

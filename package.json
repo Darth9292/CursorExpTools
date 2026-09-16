@@ -1,0 +1,61 @@
+{
+  "name": "cursor-agent-team",
+  "version": "1.0.0",
+  "description": "Lead + worker agent team bus for multiple Cursor IDE windows",
+  "type": "module",
+  "bin": {
+    "agent-team-bus": "./dist/daemon.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start:bus": "node dist/daemon.js",
+    "ensure:bus": "node dist/ensure-daemon.js",
+    "link-local": "npm run build && node scripts/link-local.mjs",
+    "team:start": "npm run build && node dist/start.js --seed-order",
+    "team:adapt": "node dist/adapt-cli.js --agent A",
+    "team:bus-restart": "node scripts/bus-restart.mjs",
+    "smoke:check": "npm run build && npm run pack:check && npm test",
+    "team:harvest": "node dist/cli.js harvest --agent A",
+    "team:suggest": "node dist/suggest-worker-cli.js",
+    "team:status": "node dist/cli.js status",
+    "test": "vitest run",
+    "pack:check": "npm pack --dry-run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "cursor",
+    "agents",
+    "mcp",
+    "multi-agent"
+  ],
+  "license": "MIT",
+  "files": [
+    ".cursor-plugin",
+    "mcp.json",
+    "package.json",
+    "hooks",
+    "rules",
+    "skills",
+    "commands",
+    "agents",
+    "dist",
+    "README.md",
+    "LICENSE",
+    "AGENTS.md"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "express": "^5.1.0",
+    "proper-lockfile": "^4.1.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
+    "@types/proper-lockfile": "^4.1.4",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

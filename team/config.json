@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "port": 7391,
+  "leadId": "A",
+  "workers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "workspaceRoot": "E:\\CursorExperimentalTools"
+}

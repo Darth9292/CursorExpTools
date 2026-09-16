@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="cursor-agent-team">
+  <rect width="128" height="128" rx="28" fill="#1b1b1d"/>
+  <rect x="22" y="28" width="72" height="52" rx="8" fill="none" stroke="#d6d6d6" stroke-width="4"/>
+  <rect x="34" y="48" width="72" height="52" rx="8" fill="#1b1b1d" stroke="#81a1c1" stroke-width="4"/>
+  <circle cx="52" cy="74" r="5" fill="#88c0d0"/>
+  <circle cx="70" cy="74" r="5" fill="#81a1c1"/>
+  <circle cx="88" cy="74" r="5" fill="#5e81ac"/>
+</svg>
