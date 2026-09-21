@@ -10,6 +10,8 @@ import {
   parseWatchArgs,
   resolveWorkspaceRoot,
   snapshotOpenIds,
+  completedKeys,
+  freshCompletedIds,
   wakeLine,
   eventTargetsOrders,
 } from "../hooks/watch-orders.mjs";
@@ -37,6 +39,20 @@ describe("watch-orders", () => {
     expect(eventTargetsOrders("status.json")).toBe(false);
   });
 
+  it("wakes the lead only for newly finished reports", () => {
+    const before = [{ id: "ord-1", status: "done", updatedAt: "t1" }];
+    const after = [
+      { id: "ord-1", status: "done", updatedAt: "t1" },
+      { id: "ord-2", status: "done", updatedAt: "t2" },
+      { id: "ord-3", status: "open", updatedAt: "t2" },
+    ];
+    expect(freshCompletedIds(completedKeys(before), completedKeys(after))).toEqual(["ord-2"]);
+    const again = [{ id: "ord-2", status: "blocked", updatedAt: "t3" }];
+    expect(freshCompletedIds(completedKeys(after), completedKeys([...after.slice(0, 1), ...again, after[2]]))).toEqual([
+      "ord-2",
+    ]);
+  });
+
   it("wakes only on newly opened ids", () => {
     expect(newOpenIds(["ord-1"], ["ord-1", "ord-2"])).toEqual(["ord-2"]);
     expect(newOpenIds(["ord-1", "ord-2"], ["ord-2"])).toEqual([]);
@@ -46,7 +62,9 @@ describe("watch-orders", () => {
     expect(parseWatchArgs(["--agent", "D", "--root", "E:\\proj"])).toEqual({
       agent: "D",
       root: "E:\\proj",
+      reports: false,
     });
+    expect(parseWatchArgs(["--agent", "A", "--reports"]).reports).toBe(true);
     expect(wakeLine("B", ["ord-9"])).toBe(
       'AGENT_TEAM_WAKE {"agent":"B","orderIds":["ord-9"]}',
     );

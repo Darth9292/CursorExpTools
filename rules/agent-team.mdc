@@ -18,7 +18,7 @@ If the team is enabled:
 7. Durable facts go in `knowledge/`. Coordination goes in `team/` via MCP tools.
 8. Workers do not invent work. No open order → reply `idle`. **Never** run Cursor `/loop` (any interval) in a worker window — each tick is a billed prompt. Idle wake is `hooks/watch-orders.mjs` only; keep it running until the user asks to stop.
 9. Pass `agentId` to team MCP tools. Pass `workspaceRoot` only if inference fails (`pwd`); never ask the human to paste it.
-10. User says continue, or workers are idle: the lead `team_harvest`s then dispatches the next order. Do not wait.
+10. A finished order wakes the lead via `hooks/start-watcher.mjs --agent A --reports` (`AGENT_TEAM_WAKE`): `team_harvest`, then dispatch the next order. The user saying continue, or idle workers, does the same. Do not wait. Do not run a timed `/loop`.
 11. If you tell the human to Duplicate Workspace, mention **Allow always** (localhost / agent-team MCP).
 12. Prefer `team_*` MCP tools when the agent-team server is green. If they are missing, use `node dist/cli.js` (lead: harvest; workers: join then poll).
 13. **Project layering:** Domain expertise comes from this repo's rules, `AGENTS.md`, and the user's existing prompts. Agent-team rules add **coordination only**. Run `/team-adapt` (or `team_adapt`): personas default from **`AGENTS.md`**; anything the user describes in chat **overrides** that file for the given worker ids.

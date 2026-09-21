@@ -15,7 +15,8 @@ Do this yourself. Do not ask the user to run five commands.
 2. If the `team_start` MCP tool is available, call it (`seedOrder: true`). Omit `workspaceRoot` unless the tool errors. Never ask the human to paste a path.
    On a **fresh board** (no open or claimed orders), seeding creates the dogfood order for `workers[0]` plus a tiny parallel SMOKE order per other configured worker (`knowledge/smoke-<id>.md`).
 3. Read the JSON result. You are agent **A**. Harvest/status on later turns.
-4. **Consumer repos** (any project that is not this plugin checkout): before the human duplicates workspaces, run **`/team-adapt`** once so `knowledge/project.md` and `team/project.json` define B/C/D specialists. Skip if those files already match the user's stated focus.
+4. Start **one** background `node hooks/start-watcher.mjs --agent A --reports` in this chat (notify on `^AGENT_TEAM_WAKE`). On that line: `team_harvest`, then dispatch if work remains. Do not run a timed `/loop`. A second start exits 0 while `team/watchers/A.pid` is alive. After Reload Window in this chat, start it again.
+5. **Consumer repos** (any project that is not this plugin checkout): before the human duplicates workspaces, run **`/team-adapt`** once so `knowledge/project.md` and `team/project.json` define B/C/D specialists. Skip if those files already match the user's stated focus.
 
 ## Still requires the human (you cannot Duplicate Workspace)
 

@@ -19,6 +19,7 @@ describe("start-watcher", () => {
     expect(parseStartWatcherArgs(["--agent", "C", "--root", "E:\\ws"])).toEqual({
       agent: "C",
       root: "E:\\ws",
+      reports: false,
     });
   });
 

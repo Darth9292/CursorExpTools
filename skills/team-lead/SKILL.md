@@ -66,4 +66,12 @@ If a worker is `blocked`, unblock with more context (`team_nudge` or a new order
 
 Never instruct the user to type in the worker window.
 
-Do **not** start `/loop 2m` unless they explicitly want unattended harvest (expensive). Default: harvest when they say continue.
+Do **not** start `/loop 2m` unless they explicitly want unattended harvest (expensive). Default: one report watcher, not a timer.
+
+## Report watcher (workers talk back)
+
+Workers cannot type into this chat. When they `team_report`, `team/orders.json` changes. Start **one** background process in this lead chat and leave it running:
+
+`node hooks/start-watcher.mjs --agent A --reports`
+
+Use the shell notify pattern `^AGENT_TEAM_WAKE`. On that line: `team_harvest`, tell the user what came back, then `team_delegate` the next slice if work remains. Do not wake yourself on a timer. Existing done orders at startup do not fire a wake. A second start exits if `team/watchers/A.pid` is still alive.

@@ -4,6 +4,7 @@ This folder is the shared radio for Cursor IDE windows on this project.
 
 - Talk only to the **lead** chat: prefer `/team-start` (or `/team-lead`).
 - Extra windows run `/team-worker` (poll once, then `hooks/start-watcher.mjs`). Do not start a timed `/loop`.
+- The lead starts `hooks/start-watcher.mjs --agent A --reports` so a finished order prints `AGENT_TEAM_WAKE` in that chat.
 - Lead runs `/team-adapt` so B/C/D match this repo (`team/project.json`, `knowledge/project.md`).
 - If a new Duplicate Workspace shows **Allow**, click **Allow always** (localhost / agent-team MCP).
 - Durable facts go in `knowledge/`. Chatty coordination stays here.

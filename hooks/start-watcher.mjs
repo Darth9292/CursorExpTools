@@ -65,9 +65,11 @@ export function isPidAlive(pid) {
   }
 }
 
-export function spawnWatchOrders({ agent, root, node = process.execPath }) {
+export function spawnWatchOrders({ agent, root, reports = false, node = process.execPath }) {
   const script = watchOrdersScriptPath();
-  const child = spawn(node, [script, "--agent", agent, "--root", root], {
+  const args = [script, "--agent", agent, "--root", root];
+  if (reports) args.push("--reports");
+  const child = spawn(node, args, {
     stdio: "inherit",
     windowsHide: true,
   });
@@ -75,9 +77,9 @@ export function spawnWatchOrders({ agent, root, node = process.execPath }) {
 }
 
 function main() {
-  const { agent, root: rootArg } = parseStartWatcherArgs(process.argv.slice(2));
+  const { agent, root: rootArg, reports } = parseStartWatcherArgs(process.argv.slice(2));
   if (!agent) {
-    console.error("usage: node hooks/start-watcher.mjs --agent B [--root <workspace>]");
+    console.error("usage: node hooks/start-watcher.mjs --agent B [--root <workspace>] [--reports]");
     process.exit(1);
   }
   const id = canonicalizeAgentId(agent);
@@ -88,7 +90,7 @@ function main() {
     process.exit(0);
   }
   const startedAt = new Date().toISOString();
-  const child = spawnWatchOrders({ agent: id, root });
+  const child = spawnWatchOrders({ agent: id, root, reports });
   if (!child.pid) {
     console.error("failed to start watch-orders.mjs");
     process.exit(1);

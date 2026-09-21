@@ -69,7 +69,7 @@ This plugin repo is meant to dogfood itself that way.
 5. Duplicate Workspace; if Allow, click **Allow always** (localhost / agent-team MCP).
 6. In the copy: `/team-worker` (watcher, not a timed loop). Talk only to the lead.
 
-The lead harvests when you say **continue**. Do **not** leave `/loop 2m` running — that is also a billed prompt every tick. Unattended harvest, if you insist: `/loop 1h`, not 2m.
+After `/team-start`, this lead chat starts one `hooks/start-watcher.mjs --agent A --reports` (notify on `AGENT_TEAM_WAKE`). When a worker finishes, that line wakes the lead to harvest and hand out the next task. Saying **continue** still harvests. Do **not** leave `/loop 2m` running.
 
 ## Adapting to your project
 
@@ -160,6 +160,7 @@ Manual multi-window checks: [test/SMOKE.md](test/SMOKE.md)
 ## Limits
 
 - **Workers never use a timed `/loop`.** Idle is silent until `hooks/start-watcher.mjs` (or `watch-orders.mjs`) prints `AGENT_TEAM_WAKE` for a new open order, or you prompt that chat. A 1m `/loop` is still a billed prompt every tick — do not use it for workers.
+- **The lead does not use a timed `/loop` either.** `hooks/start-watcher.mjs --agent A --reports` prints `AGENT_TEAM_WAKE` when a worker marks an order done or blocked. Harvest on that wake, and when you say continue. After Reload Window in the lead chat, start that watcher again.
 - After **Reload Window** in a worker chat, run `/team-worker` again (the watcher is not persisted).
 - Workers wake when `team/orders.json` gains a **new open** order for them, or when you prompt that chat.
 - Same checkout: isolation is **claims**, not git worktrees.

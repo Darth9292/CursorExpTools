@@ -48,12 +48,14 @@ export function loadOrdersFile(file) {
 export function parseWatchArgs(argv) {
   let agent;
   let root = process.cwd();
+  let reports = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--agent" && argv[i + 1]) agent = argv[++i];
     else if (a === "--root" && argv[i + 1]) root = argv[++i];
+    else if (a === "--reports") reports = true;
   }
-  return { agent, root };
+  return { agent, root, reports };
 }
 
 /** Find workspace when agent shell cwd is wrong (e.g. System32). */
@@ -74,6 +76,22 @@ export function resolveWorkspaceRoot(candidateRoot) {
 
 export function wakeLine(agent, orderIds) {
   return `AGENT_TEAM_WAKE ${JSON.stringify({ agent, orderIds })}`;
+}
+
+/** Done or blocked orders, keyed so a later report of the same id wakes again. */
+export function completedKeys(orders) {
+  if (!Array.isArray(orders)) return [];
+  const keys = [];
+  for (const order of orders) {
+    if (!order || (order.status !== "done" && order.status !== "blocked")) continue;
+    if (!order.id) continue;
+    keys.push(`${order.id}@${order.updatedAt ?? ""}`);
+  }
+  return keys;
+}
+
+export function freshCompletedIds(prevKeys, nextKeys) {
+  return newOpenIds(prevKeys, nextKeys).map((key) => String(key).split("@")[0]);
 }
 
 /** Directory watches also fire for status.json. Ignore those when the filename is known. */
@@ -97,22 +115,35 @@ export function snapshotOpenIds(root, agent) {
   return openIdsForAgent(loadOrdersFile(file), agent);
 }
 
+export function snapshotCompletedKeys(root) {
+  const file = ordersPath(root);
+  if (!existsSync(file)) return [];
+  return completedKeys(loadOrdersFile(file));
+}
+
 function main() {
-  const { agent, root: rootArg } = parseWatchArgs(process.argv.slice(2));
+  const { agent, root: rootArg, reports } = parseWatchArgs(process.argv.slice(2));
   if (!agent) {
-    console.error("usage: node hooks/watch-orders.mjs --agent B [--root <workspace>]");
+    console.error("usage: node hooks/watch-orders.mjs --agent B [--root <workspace>] [--reports]");
     process.exit(1);
   }
   const root = resolveWorkspaceRoot(rootArg);
   const id = canonicalizeAgentId(agent);
   const dir = teamDir(root);
   mkdirSync(dir, { recursive: true });
-  let prev = snapshotOpenIds(root, id);
+  let prev = reports ? snapshotCompletedKeys(root) : snapshotOpenIds(root, id);
   let timer;
   const onMaybeChange = () => {
     clearTimeout(timer);
     timer = setTimeout(() => {
       try {
+        if (reports) {
+          const next = snapshotCompletedKeys(root);
+          const fresh = freshCompletedIds(prev, next);
+          prev = next;
+          if (fresh.length) console.log(wakeLine(id, fresh));
+          return;
+        }
         const next = snapshotOpenIds(root, id);
         const fresh = newOpenIds(prev, next);
         prev = next;
@@ -125,7 +156,11 @@ function main() {
   watch(dir, { persistent: true }, (_event, filename) => {
     if (eventTargetsOrders(filename)) onMaybeChange();
   });
-  console.error(`watching ${ordersPath(root)} for open orders to ${id}`);
+  console.error(
+    reports
+      ? `watching ${ordersPath(root)} for worker reports to ${id}`
+      : `watching ${ordersPath(root)} for open orders to ${id}`,
+  );
 }
 
 const entry = process.argv[1]?.replaceAll("\\", "/");

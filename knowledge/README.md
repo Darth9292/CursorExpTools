@@ -12,7 +12,7 @@ The agent-team plugin does not interpret these files; they are a convention.
 | [bus-restart.md](bus-restart.md) | `team:bus-restart` vs `ensure:bus`, MCP toggle / full Cursor quit |
 | [backlog.md](backlog.md) | Dogfood waves and parked work |
 | [wave-16-synthesis.md](wave-16-synthesis.md) | B–G brainstorm merge + wave 17 queue |
-| [usage.md](usage.md) | Workers use `watch-orders.mjs`, not timed `/loop` |
+| [usage.md](usage.md) | Worker and lead watchers (`AGENT_TEAM_WAKE`), not a timed `/loop` |
 | [marketplace.md](marketplace.md) | Marketplace submit checklist (`pack:check`, public git) |
 | [adaptation.md](adaptation.md) | `/team-adapt`, AGENTS.md, chat overrides, `npm run team:adapt` |
 | [mcp-tools.md](mcp-tools.md) | MCP catalog, `team_suggest_worker` + `npm run team:suggest`, `includeBoard` on join |
