@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -96,6 +96,16 @@ describe("cli", () => {
 
   it("status, delegate, and harvest against a temp dir", async () => {
     const { dir } = await tempTeam();
+    const statusPath = path.join(dir, "team", "status.json");
+    const status = JSON.parse(await readFile(statusPath, "utf8")) as { agents: Record<string, unknown> };
+    status.agents.E = {
+      id: "E",
+      role: "worker",
+      doing: "joined",
+      lastResult: "stale",
+      ts: "2020-01-01T00:00:00.000Z",
+    };
+    await writeFile(statusPath, `${JSON.stringify(status, null, 2)}\n`);
     const board = (await runCli(["status", "--root", dir])) as { orders: unknown[]; agents: { id: string }[] };
     expect(board.agents.map((a) => a.id).sort()).toEqual(["A", "B"]);
     expect(board.orders).toHaveLength(0);
@@ -119,8 +129,17 @@ describe("cli", () => {
     expect(order.to).toBe("B");
     expect(order.claim).toEqual(["knowledge/nids.md"]);
 
-    const polled = (await runCli(["poll", "--root", dir])) as { orders: { id: string }[] };
+    const openBoard = (await runCli(["status", "--root", dir])) as {
+      orders: { title: string; brief?: string }[];
+      agents: { id: string }[];
+    };
+    expect(openBoard.agents.map((a) => a.id).sort()).toEqual(["A", "B"]);
+    expect(openBoard.orders[0]?.title).toBe("Dump NIDs");
+    expect(openBoard.orders[0]).not.toHaveProperty("brief");
+
+    const polled = (await runCli(["poll", "--root", dir])) as { orders: { id: string; brief: string }[] };
     expect(polled.orders.map((o) => o.id)).toEqual([order.id]);
+    expect(polled.orders[0]?.brief).toBe("Write knowledge/nids.md");
 
     const claimed = (await runCli(["claim", "--root", dir, "--order", order.id])) as { status: string };
     expect(claimed.status).toBe("claimed");
@@ -137,8 +156,12 @@ describe("cli", () => {
     expect(reported.status).toBe("done");
     expect(reported.resultBody).toBe("Wrote NIDs.");
 
-    const harvested = (await runCli(["harvest", "--root", dir, "--agent", "A"])) as { results: { id: string }[] };
+    const harvested = (await runCli(["harvest", "--root", dir, "--agent", "A"])) as {
+      results: { id: string; title: string; brief?: string }[];
+    };
     expect(harvested.results.map((r) => r.id)).toEqual([order.id]);
+    expect(harvested.results[0]?.title).toBe("Dump NIDs");
+    expect(harvested.results[0]).not.toHaveProperty("brief");
     const empty = (await runCli(["harvest", "--root", dir])) as { results: unknown[] };
     expect(empty.results).toHaveLength(0);
   });

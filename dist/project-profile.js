@@ -94,7 +94,6 @@ export function enrichDelegateBrief(profile, to, brief) {
     if (persona) {
         parts.push("", `## Your role (worker ${canonicalizeAgentId(to)})`, `**${persona.title}** — ${persona.focus}`);
     }
-    parts.push("", "## Layering", profile.layeringNote ?? DEFAULT_LAYERING_NOTE);
     return parts.join("\n");
 }
 export function defaultWorkersFromConfig(config) {

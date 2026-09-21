@@ -127,7 +127,6 @@ export function enrichDelegateBrief(
       `**${persona.title}** — ${persona.focus}`,
     );
   }
-  parts.push("", "## Layering", profile.layeringNote ?? DEFAULT_LAYERING_NOTE);
   return parts.join("\n");
 }
 

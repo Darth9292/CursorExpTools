@@ -14,6 +14,7 @@ export declare function compactBoardForMcp<T extends {
 export declare function activeOrdersForMcp<T extends {
     orders: Order[];
 }>(board: T): T;
+/** Status/join: live roster only, and open/claimed orders without the brief (poll still returns it). */
 export declare function boardSnapshotForMcp<T extends {
     orders: Order[];
 }>(board: T): T;

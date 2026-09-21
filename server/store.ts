@@ -103,6 +103,8 @@ The agent-team plugin does not interpret these files; they are a convention.
 export class TeamStore {
   readonly root: string;
   readonly teamDir: string;
+  /** Lines in inbox.jsonl after the last read or rotate. Null until known. */
+  private inboxLineCount: number | null = null;
 
   constructor(workspaceRoot: string) {
     this.root = path.resolve(workspaceRoot);
@@ -216,12 +218,15 @@ export class TeamStore {
 
   async heartbeat(agentId: string, doing?: string, lastResult?: string): Promise<AgentStatus> {
     return this.withLock(async () => {
-      const agent = await this.requireAgent(agentId);
-      if (doing !== undefined) agent.doing = doing;
-      if (lastResult !== undefined) agent.lastResult = lastResult;
-      agent.ts = nowIso();
+      const id = canonicalizeAgentId(agentId);
       const status = await this.loadStatus();
-      status.agents[agent.id] = agent;
+      const agent = status.agents[id];
+      if (!agent) {
+        throw new Error(`Agent '${id}' has not joined. Call team_join first.`);
+      }
+      if (!this.assignAgentActivity(agent, doing !== undefined ? doing : agent.doing, lastResult)) {
+        return agent;
+      }
       await this.saveStatus(status);
       return agent;
     });
@@ -316,7 +321,7 @@ export class TeamStore {
     status: "done" | "blocked",
     body: string,
   ): Promise<Order> {
-    return this.withLock(async () => {
+    const pending = await this.withLock(async () => {
       const id = canonicalizeAgentId(workerId);
       await this.requireRole(id, "worker");
       const orders = await this.loadOrders();
@@ -329,19 +334,17 @@ export class TeamStore {
       order.resultBody = capResultBody(body);
       order.resultPath = path.join("team", "results", `${order.id}.md`).replaceAll("\\", "/");
       order.updatedAt = nowIso();
-      await mkdir(path.join(this.teamDir, "results"), { recursive: true });
-      await writeFile(
-        path.join(this.teamDir, "results", `${order.id}.md`),
-        `# ${order.title}\n\n- id: ${order.id}\n- worker: ${id}\n- status: ${status}\n- updated: ${order.updatedAt}\n\n${body}\n`,
-        "utf8",
-      );
+      const markdown = `# ${order.title}\n\n- id: ${order.id}\n- worker: ${id}\n- status: ${status}\n- updated: ${order.updatedAt}\n\n${body}\n`;
       await this.saveOrders(orders);
       await this.touchAgent(id, `${status} ${order.id}`, body.slice(0, 200));
       if (status === "done" && order.claim.length) {
         await this.releaseClaimsFor(id, order.claim);
       }
-      return order;
+      return { order, markdown };
     });
+    await mkdir(path.join(this.teamDir, "results"), { recursive: true });
+    await writeFile(path.join(this.teamDir, "results", `${pending.order.id}.md`), pending.markdown, "utf8");
+    return pending.order;
   }
 
   async askLead(workerId: string, orderId: string, question: string): Promise<{ order: Order; message: InboxMessage }> {
@@ -366,7 +369,9 @@ export class TeamStore {
     });
   }
 
-  async harvest(leadId: string): Promise<Order[]> {
+  async harvest(leadId: string): Promise<
+    Pick<Order, "id" | "to" | "title" | "status" | "resultBody" | "resultPath" | "updatedAt">[]
+  > {
     return this.withLock(async () => {
       const id = canonicalizeAgentId(leadId);
       await this.requireRole(id, "lead");
@@ -387,7 +392,15 @@ export class TeamStore {
       }
       await writeJson(path.join(this.teamDir, "harvest.json"), harvest);
       await this.touchAgent(id, fresh.length ? `harvested ${fresh.length} result(s)` : "harvest idle");
-      return fresh;
+      return fresh.map((order) => ({
+        id: order.id,
+        to: order.to,
+        title: order.title,
+        status: order.status,
+        resultBody: order.resultBody,
+        resultPath: order.resultPath,
+        updatedAt: order.updatedAt,
+      }));
     });
   }
 
@@ -592,15 +605,22 @@ export class TeamStore {
     return agent;
   }
 
+  /** Returns true when doing or lastResult changed and ts was refreshed. */
+  private assignAgentActivity(agent: AgentStatus, doing: string, lastResult?: string): boolean {
+    const nextResult = lastResult !== undefined ? lastResult : agent.lastResult;
+    if (doing === agent.doing && nextResult === agent.lastResult) return false;
+    agent.doing = doing;
+    agent.lastResult = nextResult;
+    agent.ts = nowIso();
+    return true;
+  }
+
   private async touchAgent(agentId: string, doing: string, lastResult?: string): Promise<void> {
     const id = canonicalizeSafe(agentId);
     const status = await this.loadStatus();
     const prev = status.agents[id];
     if (!prev) return;
-    prev.doing = doing;
-    if (lastResult !== undefined) prev.lastResult = lastResult;
-    prev.ts = nowIso();
-    status.agents[id] = prev;
+    if (!this.assignAgentActivity(prev, doing, lastResult)) return;
     await this.saveStatus(status);
   }
 
@@ -633,6 +653,7 @@ export class TeamStore {
     file.orders = file.orders.filter((o) => o.status !== "done" || doneNewest.has(o.id));
     for (const order of file.orders) {
       order.resultBody = capResultBody(order.resultBody);
+      if (order.status === "done") order.brief = "";
     }
     await writeJson(path.join(this.teamDir, "orders.json"), file);
   }
@@ -708,6 +729,11 @@ export class TeamStore {
       body,
     };
     await appendFile(path.join(this.teamDir, "inbox.jsonl"), `${JSON.stringify(message)}\n`, "utf8");
+    const known = this.inboxLineCount;
+    if (known !== null && known + 1 <= INBOX_KEEP_LINES) {
+      this.inboxLineCount = known + 1;
+      return message;
+    }
     await this.rotateInboxUnlocked();
     return message;
   }
@@ -716,7 +742,12 @@ export class TeamStore {
     const inboxPath = path.join(this.teamDir, "inbox.jsonl");
     const raw = await readFile(inboxPath, "utf8");
     const lines = raw.split(/\r?\n/).filter((line) => line.length > 0);
-    if (lines.length <= keep) return;
-    await writeFile(inboxPath, `${lines.slice(-keep).join("\n")}\n`, "utf8");
+    if (lines.length <= keep) {
+      this.inboxLineCount = lines.length;
+      return;
+    }
+    const kept = lines.slice(-keep);
+    await writeFile(inboxPath, `${kept.join("\n")}\n`, "utf8");
+    this.inboxLineCount = kept.length;
   }
 }

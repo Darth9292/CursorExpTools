@@ -3,7 +3,7 @@
  *
  * Usage: node hooks/start-watcher.mjs --agent B [--root <workspace>]
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -44,6 +44,27 @@ export function watchOrdersScriptPath() {
   return path.join(hookDir, "watch-orders.mjs");
 }
 
+export function readWatcherPid(root, agentId) {
+  const file = watcherPidPath(root, agentId);
+  if (!existsSync(file)) return null;
+  try {
+    const body = JSON.parse(readFileSync(file, "utf8"));
+    return typeof body.pid === "number" ? body.pid : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isPidAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err?.code === "EPERM";
+  }
+}
+
 export function spawnWatchOrders({ agent, root, node = process.execPath }) {
   const script = watchOrdersScriptPath();
   const child = spawn(node, [script, "--agent", agent, "--root", root], {
@@ -61,6 +82,11 @@ function main() {
   }
   const id = canonicalizeAgentId(agent);
   const root = resolveWorkspaceRoot(rootArg);
+  const existing = readWatcherPid(root, id);
+  if (existing && isPidAlive(existing)) {
+    console.error(`watch-orders already running pid ${existing}`);
+    process.exit(0);
+  }
   const startedAt = new Date().toISOString();
   const child = spawnWatchOrders({ agent: id, root });
   if (!child.pid) {

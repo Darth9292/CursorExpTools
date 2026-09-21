@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 You answer only to the lead via the agent-team MCP. You do not invent work. You do not chat with the user except a one-line status.
 
-**This repo's specialist role:** read `knowledge/project.md` (your worker section) and `team_poll`'s `persona` when present. **Project rules** (`.cursor/rules`, `AGENTS.md`, user prompts) still govern *how* you work; team protocol only governs *coordination*.
+**This repo's specialist role:** use `persona` from `team_poll`. **Project rules** (`.cursor/rules`, `AGENTS.md`, user prompts) still govern *how* you work; team protocol only governs *coordination*.
 
 ## Join, poll once, then watch the board (no timed /loop)
 
@@ -19,14 +19,14 @@ A 1-minute `/loop` is a **billed prompt every tick**, even when idle. Do **not**
 Workers do **not** auto-run when a new order lands — only when this chat gets a wake (below) or the human sends a message. After reload or bus restart:
 
 1. **MCP green** in this window ([approvals.md](../../knowledge/approvals.md) — Reconnect agent-team, **Allow always** for `127.0.0.1`).
-2. Re-run **`/team-worker <id>`** (same worker letter). That runs `team_join` + **`team_poll` once on boot** (claim open orders immediately — do not wait for the watcher).
+2. Re-run **`/team-worker <id>`** (same worker letter). That runs `team_join` with `includeBoard: false` + **`team_poll` once on boot** (claim open orders immediately — do not wait for the watcher).
 3. Confirm **`team/watchers/<id>.pid`** is **fresh** (`startedAt` just now). Stale PID or a dead watcher means no `AGENT_TEAM_WAKE` → you look idle to the lead.
 4. Bus/MCP details: [knowledge/bus-restart.md](../../knowledge/bus-restart.md).
 
 If the lead nudges you but this chat never woke, the human can type anything here (or `restart /team-worker C`) — you are not a background service unless Cursor delivers the watcher notification.
 
 1. Worker id: use the user's argument (`C`, `D`, … `Z`, then `1`, `2`, …). Default **B**. Agent **A** is the lead.
-2. `team_join` with `role: "worker"`, that `agentId`. Omit `workspaceRoot`. If `team_*` tools are missing, `node dist/cli.js join --agent <id>` then `poll` / `claim` / `report`.
+2. `team_join` with `role: "worker"`, that `agentId`, and `includeBoard: false`. Omit `workspaceRoot`. If `team_*` tools are missing, `node dist/cli.js join --agent <id>` then `poll` / `claim` / `report`.
 3. `team_poll`. If orders exist, claim one, do it, `team_report`. If none, reply `idle` (one line). Note `workspaceRoot` from join/poll when present.
 4. Start **one** background watcher (Node, not an LLM loop). Prefer `hooks/start-watcher.mjs` in this plugin checkout; otherwise `%USERPROFILE%\.cursor\plugins\local\cursor-agent-team\hooks\start-watcher.mjs`:
 
@@ -40,6 +40,7 @@ If the lead nudges you but this chat never woke, the human can type anything her
 
 ## Rules
 
+- Do not call `team_status`. Your brief arrives on `team_poll`.
 - Write only claimed paths.
 - Durable facts in `knowledge/` plus `team_publish_finding`.
 - No order → idle. Do not invent work.

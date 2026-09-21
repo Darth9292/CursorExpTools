@@ -10,6 +10,8 @@ import {
   watchersDir,
   watchOrdersScriptPath,
   writeWatcherPidFile,
+  readWatcherPid,
+  isPidAlive,
 } from "../hooks/start-watcher.mjs";
 
 describe("start-watcher", () => {
@@ -28,6 +30,16 @@ describe("start-watcher", () => {
     expect(watchersDir(ws)).toBe(path.join(ws, "team", "watchers"));
     const body = JSON.parse(readFileSync(file, "utf8"));
     expect(body).toEqual({ pid: 4242, startedAt: "2026-09-15T00:00:00.000Z" });
+  });
+
+  it("reads a recorded pid and treats this process as alive", () => {
+    const ws = path.join(os.tmpdir(), `start-watcher-alive-${Date.now()}`);
+    mkdirSync(path.join(ws, "team"), { recursive: true });
+    writeWatcherPidFile(ws, "B", process.pid, "2026-09-21T00:00:00.000Z");
+    expect(readWatcherPid(ws, "B")).toBe(process.pid);
+    expect(isPidAlive(process.pid)).toBe(true);
+    expect(isPidAlive(2_147_483_646)).toBe(false);
+    expect(readWatcherPid(ws, "C")).toBeNull();
   });
 
   it("formatPidRecord is stable JSON", () => {

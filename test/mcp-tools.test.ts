@@ -35,6 +35,8 @@ describe("MCP tool registration", () => {
     expect(src).toMatch(/"team_adapt"/);
     expect(src).toMatch(/"team_suggest_worker"/);
     expect(src).toContain("enrichDelegateBrief(profile, args.to, args.brief)");
+    expect(src).toContain("JSON.stringify(data)");
+    expect(src).not.toContain("JSON.stringify(data, null, 2)");
   });
 });
 
@@ -116,5 +118,37 @@ describe("activeOrdersForMcp", () => {
     };
     expect(boardSnapshotForMcp(board).orders).toHaveLength(1);
     expect(boardSnapshotForMcp(board).orders[0]?.id).toBe("o");
+  });
+
+  it("boardSnapshotForMcp keeps the live roster and omits open briefs", () => {
+    const board = {
+      config: { enabled: true, port: 1, leadId: "A", workers: ["b", "C"] },
+      agents: [
+        { id: "A", role: "lead" as const, doing: "x", lastResult: "", ts: "t" },
+        { id: "B", role: "worker" as const, doing: "x", lastResult: "", ts: "t" },
+        { id: "C", role: "worker" as const, doing: "x", lastResult: "", ts: "t" },
+        { id: "E", role: "worker" as const, doing: "x", lastResult: "old", ts: "t" },
+      ],
+      orders: [sampleOrder({ id: "o", status: "open" }), sampleOrder({ id: "d", status: "done" })],
+    };
+    const snap = boardSnapshotForMcp(board);
+    expect(snap.agents.map((agent) => agent.id)).toEqual(["A", "B", "C"]);
+    expect(snap.orders).toHaveLength(1);
+    const open = snap.orders[0]!;
+    expect(open).not.toHaveProperty("brief");
+    expect(open).toMatchObject({
+      id: "o",
+      from: "A",
+      to: "B",
+      mode: "parallel",
+      status: "open",
+      title: "t",
+      claim: ["knowledge/x.md"],
+      doneWhen: "done",
+      resultPath: "team/results/x.md",
+      resultBody: "KEEP-OR-DROP-BODY",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:01.000Z",
+    });
   });
 });

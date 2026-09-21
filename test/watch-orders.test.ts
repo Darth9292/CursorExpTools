@@ -11,6 +11,7 @@ import {
   resolveWorkspaceRoot,
   snapshotOpenIds,
   wakeLine,
+  eventTargetsOrders,
 } from "../hooks/watch-orders.mjs";
 
 describe("watch-orders", () => {
@@ -27,6 +28,13 @@ describe("watch-orders", () => {
       { id: "ord-4", to: "b", status: "open" },
     ];
     expect(openIdsForAgent(orders, "B")).toEqual(["ord-1", "ord-4"]);
+  });
+
+  it("ignores status.json watch events when the filename is known", () => {
+    expect(eventTargetsOrders("orders.json")).toBe(true);
+    expect(eventTargetsOrders("orders.json.tmp")).toBe(true);
+    expect(eventTargetsOrders(null)).toBe(true);
+    expect(eventTargetsOrders("status.json")).toBe(false);
   });
 
   it("wakes only on newly opened ids", () => {

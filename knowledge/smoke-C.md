@@ -1,1 +1,1 @@
-Worker C woke via AGENT_TEAM_WAKE and start-watcher.mjs.
+Worker C woke, Plugin UX & docs, 2026-09-21.

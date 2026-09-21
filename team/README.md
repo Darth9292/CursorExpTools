@@ -20,7 +20,7 @@ This folder is the shared radio for Cursor IDE windows on this project.
 - `project.json` — specialist personas (from `/team-adapt`)
 - `watchers/<id>.pid` — orders watcher process ids (local only)
 
-Live board is capped (50 done orders, 240-char `resultBody`, inbox 100 lines); full write-ups in `results/`. See [knowledge/bloat.md](../knowledge/bloat.md).
+Live board is capped (50 done orders, 240-char `resultBody`, inbox 100 lines). `team_status` is the live roster plus open/claimed orders without briefs; workers `team_poll` for the brief. Done orders store an empty `brief`; full write-ups stay in `results/`. A second `hooks/start-watcher.mjs` for the same agent exits 0 while `watchers/<id>.pid` is alive. See [knowledge/bloat.md](../knowledge/bloat.md).
 
 ## Order modes
 

@@ -1,4 +1,4 @@
-import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, readFile, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -71,15 +71,33 @@ describe("TeamStore", () => {
 
     const claimed = await worker.claimOrder("b", order.id);
     expect(claimed.status).toBe("claimed");
+    const claimedOnDisk = JSON.parse(await readFile(path.join(store.teamDir, "orders.json"), "utf8")) as {
+      orders: { id: string; brief: string; status: string }[];
+    };
+    expect(claimedOnDisk.orders.find((o) => o.id === order.id)?.brief).toBe("Write knowledge/nids.md");
 
     const reported = await worker.report("b", order.id, "done", "Wrote 12 NIDs.");
     expect(reported.status).toBe("done");
     const result = await readFile(path.join(store.teamDir, "results", `${order.id}.md`), "utf8");
     expect(result).toContain("Wrote 12 NIDs.");
 
+    const doneOnDisk = JSON.parse(await readFile(path.join(store.teamDir, "orders.json"), "utf8")) as {
+      orders: { id: string; brief: string; status: string }[];
+    };
+    expect(doneOnDisk.orders.find((o) => o.id === order.id)?.brief).toBe("");
+
     const firstHarvest = await lead.harvest("lead-a");
     expect(firstHarvest).toHaveLength(1);
-    expect(firstHarvest[0]?.id).toBe(order.id);
+    expect(firstHarvest[0]).toEqual({
+      id: order.id,
+      to: "B",
+      title: "Dump NIDs",
+      status: "done",
+      resultBody: "Wrote 12 NIDs.",
+      resultPath: `team/results/${order.id}.md`,
+      updatedAt: reported.updatedAt,
+    });
+    expect(firstHarvest[0]).not.toHaveProperty("brief");
 
     const secondHarvest = await lead.harvest("lead-a");
     expect(secondHarvest).toHaveLength(0);
@@ -270,6 +288,37 @@ describe("TeamStore", () => {
       orders: { resultBody: string }[];
     };
     expect(onDisk.orders[0]?.resultBody).toHaveLength(240);
+  });
+
+  it("skips a status rewrite when heartbeat doing and lastResult are unchanged", async () => {
+    const store = await tempStore();
+    await store.join("B", "worker", "idle");
+    const first = await store.whoami("B");
+    const statusPath = path.join(store.teamDir, "status.json");
+    const before = (await stat(statusPath)).mtimeMs;
+    const again = await store.heartbeat("B", "idle");
+    expect(again.ts).toBe(first.ts);
+    expect(again.doing).toBe("idle");
+    expect((await stat(statusPath)).mtimeMs).toBe(before);
+    const sameResult = await store.heartbeat("B", "idle", first.lastResult);
+    expect(sameResult.ts).toBe(first.ts);
+    await new Promise((r) => setTimeout(r, 5));
+    const changed = await store.heartbeat("B", "working");
+    expect(changed.doing).toBe("working");
+    expect(changed.ts).not.toBe(first.ts);
+  });
+
+  it("does not reread inbox.jsonl on a second append under the cap", async () => {
+    const store = await tempStore();
+    await store.join("A", "lead");
+    await store.inboxSend({ from: "A", to: "*", type: "finding", body: "prime" });
+    const inboxPath = path.join(store.teamDir, "inbox.jsonl");
+    const stuffed = Array.from({ length: 100 }, (_, i) => JSON.stringify({ n: i })).join("\n") + "\n";
+    await writeFile(inboxPath, stuffed, "utf8");
+    await store.inboxSend({ from: "A", to: "*", type: "finding", body: "second" });
+    const lines = (await readFile(inboxPath, "utf8")).split(/\r?\n/).filter((line) => line.length > 0);
+    expect(lines).toHaveLength(101);
+    expect(lines[100]).toContain("second");
   });
 
   it("rotates inbox.jsonl to the last 100 lines", async () => {

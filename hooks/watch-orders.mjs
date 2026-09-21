@@ -76,6 +76,13 @@ export function wakeLine(agent, orderIds) {
   return `AGENT_TEAM_WAKE ${JSON.stringify({ agent, orderIds })}`;
 }
 
+/** Directory watches also fire for status.json. Ignore those when the filename is known. */
+export function eventTargetsOrders(filename) {
+  if (!filename) return true;
+  const name = String(filename);
+  return name === "orders.json" || name.startsWith("orders.json");
+}
+
 function teamDir(root) {
   return path.join(root, "team");
 }
@@ -116,8 +123,7 @@ function main() {
     }, 300);
   };
   watch(dir, { persistent: true }, (_event, filename) => {
-    const name = filename ? String(filename) : "";
-    if (!name || name === "orders.json" || name.startsWith("orders.json")) onMaybeChange();
+    if (eventTargetsOrders(filename)) onMaybeChange();
   });
   console.error(`watching ${ordersPath(root)} for open orders to ${id}`);
 }

@@ -5,6 +5,7 @@ import { startTeam } from "./bootstrap.js";
 import { adaptProject } from "./adapt-project.js";
 import { enrichDelegateBrief, personaForWorker, readProjectProfile } from "./project-profile.js";
 import { suggestWorkers, topWorkerSuggestion } from "./suggest-worker.js";
+import { canonicalizeAgentId } from "./ids.js";
 import { resolveWorkspaceRoot } from "./workspace.js";
 import type { InboxType, Order, OrderMode, Role } from "./types.js";
 
@@ -26,7 +27,7 @@ export function storeFor(workspaceRoot?: string): TeamStore {
 
 function jsonResult(data: unknown) {
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
+    content: [{ type: "text" as const, text: JSON.stringify(data) }],
   };
 }
 
@@ -71,8 +72,44 @@ export function activeOrdersForMcp<T extends { orders: Order[] }>(board: T): T {
   };
 }
 
+function rosterIds(config: { leadId: string; workers: string[] }): Set<string> {
+  const ids = new Set<string>();
+  for (const raw of [config.leadId, ...config.workers]) {
+    try {
+      ids.add(canonicalizeAgentId(raw));
+    } catch {
+      ids.add(raw);
+    }
+  }
+  return ids;
+}
+
+/** Status/join: live roster only, and open/claimed orders without the brief (poll still returns it). */
 export function boardSnapshotForMcp<T extends { orders: Order[] }>(board: T): T {
-  return compactBoardForMcp(activeOrdersForMcp(board));
+  const active = compactBoardForMcp(activeOrdersForMcp(board));
+  const orders = active.orders.map((order) => {
+    const { brief: _brief, ...rest } = order;
+    return rest;
+  });
+  const snapshot = { ...active, orders } as T;
+  const rosterBoard = board as T & {
+    agents?: { id: string }[];
+    config?: { leadId: string; workers: string[] };
+  };
+  if (rosterBoard.agents && rosterBoard.config) {
+    const roster = rosterIds(rosterBoard.config);
+    return {
+      ...snapshot,
+      agents: rosterBoard.agents.filter((agent) => {
+        try {
+          return roster.has(canonicalizeAgentId(agent.id));
+        } catch {
+          return roster.has(agent.id);
+        }
+      }),
+    } as T;
+  }
+  return snapshot;
 }
 
 /** team_join response body before workspaceRoot: omit board when includeBoard is false (heartbeat joins). */
@@ -187,7 +224,7 @@ export function registerTeamTools(server: McpServer): void {
 
   server.tool(
     "team_status",
-    "Board snapshot: agents, open/claimed orders only, active claims, config. Done work: team_harvest.",
+    "Board snapshot: live roster (lead + configured workers) only, open/claimed orders without briefs, active claims, config. Workers use team_poll for the brief. Done work: team_harvest.",
     { workspaceRoot },
     async (args) => {
       try {

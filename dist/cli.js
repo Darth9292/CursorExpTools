@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { boardSnapshotForMcp } from "./mcp-tools.js";
 import { TeamStore } from "./store.js";
 import { DEFAULT_LEAD_ID, DEFAULT_WORKER_ID } from "./types.js";
 import { resolveWorkspaceRoot } from "./workspace.js";
@@ -118,7 +119,7 @@ export async function runCli(argv, cwd = process.cwd()) {
         return { results };
     }
     if (args.command === "status") {
-        return store.getBoard();
+        return boardSnapshotForMcp(await store.getBoard());
     }
     if (args.command === "join") {
         return store.join(args.agent, args.role ?? "worker");

@@ -4,6 +4,7 @@ import { startTeam } from "./bootstrap.js";
 import { adaptProject } from "./adapt-project.js";
 import { enrichDelegateBrief, personaForWorker, readProjectProfile } from "./project-profile.js";
 import { suggestWorkers, topWorkerSuggestion } from "./suggest-worker.js";
+import { canonicalizeAgentId } from "./ids.js";
 import { resolveWorkspaceRoot } from "./workspace.js";
 const stores = new Map();
 export function workspaceKeys() {
@@ -20,7 +21,7 @@ export function storeFor(workspaceRoot) {
 }
 function jsonResult(data) {
     return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify(data) }],
     };
 }
 function errorResult(err) {
@@ -58,8 +59,42 @@ export function activeOrdersForMcp(board) {
         orders: board.orders.filter((o) => o.status === "open" || o.status === "claimed"),
     };
 }
+function rosterIds(config) {
+    const ids = new Set();
+    for (const raw of [config.leadId, ...config.workers]) {
+        try {
+            ids.add(canonicalizeAgentId(raw));
+        }
+        catch {
+            ids.add(raw);
+        }
+    }
+    return ids;
+}
+/** Status/join: live roster only, and open/claimed orders without the brief (poll still returns it). */
 export function boardSnapshotForMcp(board) {
-    return compactBoardForMcp(activeOrdersForMcp(board));
+    const active = compactBoardForMcp(activeOrdersForMcp(board));
+    const orders = active.orders.map((order) => {
+        const { brief: _brief, ...rest } = order;
+        return rest;
+    });
+    const snapshot = { ...active, orders };
+    const rosterBoard = board;
+    if (rosterBoard.agents && rosterBoard.config) {
+        const roster = rosterIds(rosterBoard.config);
+        return {
+            ...snapshot,
+            agents: rosterBoard.agents.filter((agent) => {
+                try {
+                    return roster.has(canonicalizeAgentId(agent.id));
+                }
+                catch {
+                    return roster.has(agent.id);
+                }
+            }),
+        };
+    }
+    return snapshot;
 }
 /** team_join response body before workspaceRoot: omit board when includeBoard is false (heartbeat joins). */
 export function joinPayloadForMcp(joined, board, includeBoard) {
@@ -143,7 +178,7 @@ export function registerTeamTools(server) {
             return errorResult(err);
         }
     });
-    server.tool("team_status", "Board snapshot: agents, open/claimed orders only, active claims, config. Done work: team_harvest.", { workspaceRoot }, async (args) => {
+    server.tool("team_status", "Board snapshot: live roster (lead + configured workers) only, open/claimed orders without briefs, active claims, config. Workers use team_poll for the brief. Done work: team_harvest.", { workspaceRoot }, async (args) => {
         try {
             return jsonResult(boardSnapshotForMcp(await storeFor(args.workspaceRoot).getBoard()));
         }

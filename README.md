@@ -164,5 +164,5 @@ Manual multi-window checks: [test/SMOKE.md](test/SMOKE.md)
 - Workers wake when `team/orders.json` gains a **new open** order for them, or when you prompt that chat.
 - Same checkout: isolation is **claims**, not git worktrees.
 - Localhost only. Cloud Agents will not see this bus.
-- The live `team/` board is capped (`resultBody` 240 chars, inbox 100 lines / 16 KB per message, 50 done orders). Use `team_join` with `includeBoard: false` for heartbeat-only joins. Full write-ups stay in `team/results/`. See [knowledge/bloat.md](knowledge/bloat.md).
+- The live `team/` board is capped (`resultBody` 240 chars, inbox 100 lines / 16 KB per message, 50 done orders). Workers and lead heartbeats call `team_join` with `includeBoard: false`. `team_status` and `node dist/cli.js status` list only the live roster and open/claimed orders, without briefs; workers `team_poll` for the brief. Done orders keep an empty `brief`; the full text stays in `team/results/`. `team_harvest` returns a short result. Delegate adds domain and persona, not the layering paragraph. See [knowledge/bloat.md](knowledge/bloat.md).
 - After `dist/` changes, restart the localhost bus so the running daemon picks them up.

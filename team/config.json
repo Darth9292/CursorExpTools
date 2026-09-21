@@ -4,8 +4,7 @@
   "leadId": "A",
   "workers": [
     "B",
-    "C",
-    "D"
+    "C"
   ],
   "workspaceRoot": "E:\\CursorExperimentalTools"
 }

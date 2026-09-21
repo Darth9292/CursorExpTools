@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Efficiency:** `team_status` lists only the live roster and omits order briefs (workers use `team_poll`). Harvest returns a short result. Done orders store an empty brief. MCP JSON is compact. Delegate briefs no longer repeat the layering paragraph. A second `/team-worker` does not start another watcher if that pid is still alive.
+- **Store:** an unchanged heartbeat does not rewrite `status.json`. `report()` writes `team/results/<id>.md` after releasing the board lock. Inbox append does not reread `inbox.jsonl` while the file is under 100 lines.
 - **Wave 20 / publish prep:** README lead routing (`team_suggest_worker`, `npm run team:suggest`); root `AGENTS.md` for plugin dogfood; marketplace checklist cross-links.
 - **Efficiency:** `team_status` and `team_join` return only open/claimed orders; use `team_harvest` for completed work.
 - **Bus:** `/health` includes `buildId` and `startedAt`; `ensure:bus` reports `distStale` when `dist/` is newer than the running listener; sessionStart warns on stale bus.

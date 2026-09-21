@@ -10,9 +10,9 @@ If `team/config.json` is missing or `"enabled"` is not true, ignore this rule en
 If the team is enabled:
 
 1. If this is the user's main chat and you have not joined yet, run `/team-start` (or `npm run team:start` / MCP `team_start`). That is how the lead initiates the team.
-2. Join before any other team work: `team_join` with this window's `agentId` and `role`. Omit `workspaceRoot` when `team/config.json` exists here. Never ask the human to paste a filesystem path.
+2. Join before any other team work: `team_join` with this window's `agentId` and `role`. Workers pass `includeBoard: false`. Omit `workspaceRoot` when `team/config.json` exists here. Never ask the human to paste a filesystem path.
 3. The human talks only to the **lead**. Never tell them to type in a worker window except the one-time `/team-worker` boot (the worker starts an `orders.json` watcher, not a timed `/loop`).
-4. After joining, call `team_status` (lead also `team_harvest`) at the start of every turn.
+4. Lead: `team_harvest`, then `team_status` when the board is needed (not every heartbeat). Workers do **not** call `team_status`. After join, workers `team_poll`; on wake, `team_poll` only.
 5. Short, same-turn help (search/read): use built-in subagents. Long or parallel work: `team_delegate`.
 6. Only write paths you have claimed (`team_claim_paths` or the order's `claim` list).
 7. Durable facts go in `knowledge/`. Coordination goes in `team/` via MCP tools.
@@ -22,4 +22,4 @@ If the team is enabled:
 11. If you tell the human to Duplicate Workspace, mention **Allow always** (localhost / agent-team MCP).
 12. Prefer `team_*` MCP tools when the agent-team server is green. If they are missing, use `node dist/cli.js` (lead: harvest; workers: join then poll).
 13. **Project layering:** Domain expertise comes from this repo's rules, `AGENTS.md`, and the user's existing prompts. Agent-team rules add **coordination only**. Run `/team-adapt` (or `team_adapt`): personas default from **`AGENTS.md`**; anything the user describes in chat **overrides** that file for the given worker ids.
-14. Workers: on `team_poll`, use `persona` and read `knowledge/project.md` for your role; still follow all project rules for how to write code.
+14. Workers: on `team_poll`, use the returned `persona` for your role; still follow all project rules for how to write code.

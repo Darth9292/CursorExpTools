@@ -8,6 +8,8 @@ export declare const KNOWLEDGE_README = "# Knowledge\n\nDurable facts for this p
 export declare class TeamStore {
     readonly root: string;
     readonly teamDir: string;
+    /** Lines in inbox.jsonl after the last read or rotate. Null until known. */
+    private inboxLineCount;
     constructor(workspaceRoot: string);
     scaffold(): Promise<void>;
     readConfig(): Promise<TeamConfig | null>;
@@ -37,7 +39,7 @@ export declare class TeamStore {
         order: Order;
         message: InboxMessage;
     }>;
-    harvest(leadId: string): Promise<Order[]>;
+    harvest(leadId: string): Promise<Pick<Order, "id" | "to" | "title" | "status" | "resultBody" | "resultPath" | "updatedAt">[]>;
     cancel(leadId: string, orderId: string): Promise<Order>;
     nudge(leadId: string, workerId: string, body: string): Promise<InboxMessage>;
     inboxSend(input: {
@@ -64,6 +66,8 @@ export declare class TeamStore {
     private saveConfig;
     private requireAgent;
     requireRole(agentId: string, role: Role): Promise<AgentStatus>;
+    /** Returns true when doing or lastResult changed and ts was refreshed. */
+    private assignAgentActivity;
     private touchAgent;
     private loadStatus;
     private saveStatus;

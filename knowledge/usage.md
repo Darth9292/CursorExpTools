@@ -4,7 +4,7 @@ Cursor bills **each agent turn**, including idle timed-automation ticks with not
 
 Three workers polling every minute ≈ **180 idle prompts/hour**.
 
-**Default:** `/team-worker` starts `hooks/watch-orders.mjs`. That is a Node `fs.watch` on `team/`. It prints `AGENT_TEAM_WAKE` only when that worker gets a **new open** order. The model runs then, not every minute.
+**Default:** `/team-worker` joins with `includeBoard: false`, then `team_poll`, then starts `hooks/watch-orders.mjs`. That is a Node `fs.watch` on `team/`. It prints `AGENT_TEAM_WAKE` only when that worker gets a **new open** order. The model runs then, not every minute. A second `hooks/start-watcher.mjs` for the same agent exits 0 when `team/watchers/<id>.pid` is still alive.
 
 **Lead:** harvest when the user says continue. Do not `/loop 2m` unless they ask for unattended harvest (`/loop 1h` max).
 

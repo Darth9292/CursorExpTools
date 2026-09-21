@@ -22,7 +22,7 @@ describe("project-profile", () => {
     expect(out).toContain("Fix trader UI bug");
     expect(out).toContain("DayZ modding");
     expect(out).toContain("Gameplay scripter");
-    expect(out).toContain("Layering");
+    expect(out).not.toContain("Layering");
   });
 
   it("returns the raw brief when profile is null", () => {
@@ -34,7 +34,7 @@ describe("project-profile", () => {
     expect(out.startsWith("Ship docs.")).toBe(true);
     expect(out).toContain("DayZ modding");
     expect(out).not.toContain("Your role");
-    expect(out).toContain("Layering");
+    expect(out).not.toContain("Layering");
   });
 
   it("resolves persona by worker id", () => {
