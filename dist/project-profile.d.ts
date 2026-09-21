@@ -25,3 +25,8 @@ export declare function enrichDelegateBrief(profile: ProjectProfile | null, to: 
 export declare function defaultWorkersFromConfig(config: TeamConfig): Record<string, WorkerPersona>;
 export declare function projectMarkdownExists(workspaceRoot: string): boolean;
 export declare function renderProjectMarkdown(profile: ProjectProfile): string;
+/**
+ * Add a persona for a worker who just joined, without dropping anyone already in the profile.
+ * AGENTS.md wins when it has a section for that id; otherwise a generic specialist is used.
+ */
+export declare function ensureWorkerPersona(workspaceRoot: string, workerId: string): WorkerPersona;

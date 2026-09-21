@@ -4,7 +4,7 @@ Drop the plugin into a **PS3 reverse engineering** tree, a **DayZ modding** repo
 
 ## What stays the same (plugin)
 
-- Lead **A** talks to you; workers **B**, **C**, **D** execute orders.
+- Lead **A** talks to you. Workers start at **B** and grow in order: **C**, **D**, … **Z**, then **1**, **2**, **3**…. Each `/team-worker <id>` for the next free id appends that worker. There is no fixed cap at C.
 - `team_delegate`, file watcher wake, no timed `/loop`.
 - `team/` board and MCP bus.
 
@@ -12,7 +12,7 @@ Drop the plugin into a **PS3 reverse engineering** tree, a **DayZ modding** repo
 
 | File | Purpose |
 |------|---------|
-| `knowledge/project.md` | Human-readable domain + specialist table for B/C/D |
+| `knowledge/project.md` | Human-readable domain + specialist table for every joined worker |
 | `team/project.json` | Machine profile; `team_delegate` injects context into orders |
 | Your existing `.cursor/rules`, `AGENTS.md`, prompts | **Unchanged** — still authoritative for domain work |
 
@@ -27,7 +27,7 @@ Drop the plugin into a **PS3 reverse engineering** tree, a **DayZ modding** repo
 3. If `team_adapt` is missing, restart the bus on port **7391** then Reload Window ([mcp-tools.md](mcp-tools.md)).
 4. Duplicate Workspace → `/team-worker` in each worker window
 
-Re-run **`/team-adapt`** when the project focus shifts (new mod, new console target, etc.).
+Re-run **`/team-adapt`** when the project focus shifts (new mod, new console target, etc.). A worker who joins after the last adapt still gets a persona: their `AGENTS.md` section if it exists, otherwise a generic specialist. That does not remove personas already on the roster.
 
 ## Examples
 

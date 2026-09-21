@@ -2,6 +2,7 @@ import { mkdtemp, rm, readFile, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { readProjectProfile } from "../server/project-profile.js";
 import { INBOX_MAX_BODY_CHARS, KEEP_DONE_ORDERS, TeamStore } from "../server/store.js";
 
 const dirs: string[] = [];
@@ -240,6 +241,27 @@ describe("TeamStore", () => {
     const config = await store.readConfig();
     expect(config?.workers).toEqual(["B", "C"]);
     await expect(store.join("E", "worker")).rejects.toThrow(/Next worker is 'D'/);
+  });
+
+  it("registers the next worker past C and keeps a persona from AGENTS.md", async () => {
+    const store = await tempStore();
+    await writeFile(
+      path.join(store.root, "AGENTS.md"),
+      "# Demo\n\n## Agent D — Docs\n\n- **Title:** Docs lead\n- **Focus:** notes and harness\n",
+    );
+    await store.join("A", "lead");
+    await store.join("B", "worker");
+    await store.join("C", "worker");
+    await store.join("D", "worker");
+    const config = await store.readConfig();
+    expect(config?.workers).toEqual(["B", "C", "D"]);
+    const profile = readProjectProfile(store.root);
+    expect(profile?.workers.D).toEqual({ title: "Docs lead", focus: "notes and harness" });
+    expect(profile?.workers.B?.title).toBe("Specialist B");
+    await store.join("D", "worker");
+    const again = readProjectProfile(store.root);
+    expect(again?.workers.D?.title).toBe("Docs lead");
+    expect(again?.workers.C?.title).toBe("Specialist C");
   });
 
   it("caps resultBody at 240 in orders.json and keeps full text in results/*.md", async () => {

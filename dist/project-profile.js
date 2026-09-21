@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { parseAgentsMarkdown, readAgentsMd } from "./agents-md.js";
 import { canonicalizeAgentId } from "./ids.js";
 export const DEFAULT_LAYERING_NOTE = "Project rules (.cursor/rules), AGENTS.md, and the user's existing system prompts define domain expertise. Agent-team rules add multi-window coordination only — do not replace or contradict project instructions.";
 export const PROJECT_PROFILE_PATH = "team/project.json";
@@ -127,10 +128,57 @@ export function renderProjectMarkdown(profile) {
         "## Specialists",
         "",
     ];
-    for (const [id, persona] of Object.entries(profile.workers).sort()) {
+    const ids = Object.keys(profile.workers).sort((a, b) => personaSortKey(a).localeCompare(personaSortKey(b)));
+    for (const id of ids) {
+        const persona = profile.workers[id];
         lines.push(`### ${id}`, "", `- **Title:** ${persona.title}`, `- **Focus:** ${persona.focus}`, "");
     }
     lines.push("## Sources", "", profile.sources.length ? profile.sources.map((s) => `- ${s}`).join("\n") : "(none)", "", "## Layering", "", profile.layeringNote ?? DEFAULT_LAYERING_NOTE, "");
     return lines.join("\n");
+}
+function personaSortKey(id) {
+    if (/^[A-Z]$/.test(id))
+        return `0${id}`;
+    if (/^\d+$/.test(id))
+        return `1${id.padStart(6, "0")}`;
+    return `2${id}`;
+}
+const GENERIC_FOCUS = "Execute lead orders using this repo's rules and docs.";
+/**
+ * Add a persona for a worker who just joined, without dropping anyone already in the profile.
+ * AGENTS.md wins when it has a section for that id; otherwise a generic specialist is used.
+ */
+export function ensureWorkerPersona(workspaceRoot, workerId) {
+    const id = canonicalizeAgentId(workerId);
+    const existing = readProjectProfile(workspaceRoot);
+    const already = personaForWorker(existing, id);
+    if (existing && already)
+        return already;
+    const agents = readAgentsMd(workspaceRoot);
+    let persona = { title: `Specialist ${id}`, focus: GENERIC_FOCUS };
+    const sources = new Set(existing?.sources ?? []);
+    let domain = existing?.domain ?? "";
+    let summary = existing?.summary ?? "";
+    if (agents) {
+        const parsed = parseAgentsMarkdown(agents, [id]);
+        if (parsed.workers[id])
+            persona = parsed.workers[id];
+        if (!domain && parsed.domain)
+            domain = parsed.domain;
+        if (!summary && parsed.summary)
+            summary = parsed.summary;
+        sources.add("AGENTS.md");
+    }
+    const profile = {
+        domain,
+        summary,
+        workers: { ...(existing?.workers ?? {}), [id]: persona },
+        sources: [...sources],
+        adaptedAt: new Date().toISOString(),
+        layeringNote: existing?.layeringNote ?? DEFAULT_LAYERING_NOTE,
+    };
+    writeFileSync(projectJsonPath(workspaceRoot), `${JSON.stringify(profile, null, 2)}\n`, "utf8");
+    writeFileSync(path.join(workspaceRoot, PROJECT_MARKDOWN_PATH), renderProjectMarkdown(profile), "utf8");
+    return persona;
 }
 //# sourceMappingURL=project-profile.js.map

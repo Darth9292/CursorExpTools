@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Adapt the team to this project
 
-You are the **lead**. Workers stay generic in the plugin; **this repo** defines who B, C, D are.
+You are the **lead**. Workers stay generic in the plugin until this repo names them. The live roster is `team/config.json` `workers`, and it grows when the next id joins (`B`, then `C`, then `D`, … `Z`, then `1`, `2`, …). `/team-adapt` profiles whoever is on that roster. A later join fills only the new id from `AGENTS.md` or a generic specialist.
 
 ## Priority (strict)
 

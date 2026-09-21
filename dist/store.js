@@ -5,7 +5,7 @@ import lockfile from "proper-lockfile";
 import { DEFAULT_CLAIM_TTL_MS, DEFAULT_CONFIG, } from "./types.js";
 import { normalizeClaimPath, normalizeClaimPaths } from "./claim-paths.js";
 import { canonicalizeAgentId, nextWorkerId } from "./ids.js";
-import { PROJECT_MARKDOWN_TEMPLATE } from "./project-profile.js";
+import { ensureWorkerPersona, PROJECT_MARKDOWN_TEMPLATE } from "./project-profile.js";
 function canonicalizeSafe(raw) {
     if (raw === "*")
         return "*";
@@ -158,6 +158,10 @@ export class TeamStore {
             };
             status.agents[id] = agent;
             await this.saveStatus(status);
+            return agent;
+        }).then((agent) => {
+            if (role === "worker")
+                ensureWorkerPersona(this.root, agent.id);
             return agent;
         });
     }
